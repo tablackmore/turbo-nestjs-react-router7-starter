@@ -1,17 +1,34 @@
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
+  // Security headers with helmet
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+    }),
+  );
 
   // Global validation pipe with transformation
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       whitelist: true,
-      forbidNonWhitelisted: false, // Allow additional properties for nested DTOs
+      forbidNonWhitelisted: true, // Reject requests with unknown properties
       transformOptions: {
         enableImplicitConversion: true,
       },
@@ -43,13 +60,13 @@ async function bootstrap() {
 
   // Enable CORS for frontend applications
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: configService.get<string[]>('cors.origins'),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
     credentials: true,
   });
 
-  const port = process.env.PORT ?? 3001;
+  const port = configService.get<number>('port', 3001);
   await app.listen(port);
 
   console.log(`🚀 API Server running on: http://localhost:${port}`);

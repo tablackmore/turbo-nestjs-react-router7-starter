@@ -1,5 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public } from '../../auth/decorators/public.decorator';
 
 class HealthData {
   @ApiProperty()
@@ -31,6 +32,7 @@ class HealthResponseDto {
 @ApiTags('health')
 @Controller('v1/health')
 export class HealthController {
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Health check endpoint' })
   @ApiResponse({
@@ -44,7 +46,7 @@ export class HealthController {
       success: true,
       data: {
         status: 'healthy',
-        uptime: process.uptime(),
+        uptime: Math.floor(process.uptime()),
       },
       meta: {
         timestamp: new Date().toISOString(),
